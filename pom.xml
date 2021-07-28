@@ -38,14 +38,6 @@
             <scope>compile</scope>
         </dependency>
 
-        <!-- SLF4J API, strong dependency on this for this package's formatting utility implementation. -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.30</version>
-            <scope>compile</scope>
-        </dependency>
-
     </dependencies>
 
 </project>
