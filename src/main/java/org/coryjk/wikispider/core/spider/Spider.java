@@ -1,9 +1,8 @@
 package org.coryjk.wikispider.core.spider;
 
-import java.net.URL;
 import java.util.List;
 
-public interface Spider {
+public interface Spider<T> {
 
-    List<URL> crawl(final URL start, final URL destination);
+    List<T> crawl(final T start, final T destination);
 }
