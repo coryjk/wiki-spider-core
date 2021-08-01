@@ -1,4 +1,4 @@
-package org.coryjk.wikispider.core.web;
+package org.coryjk.wikispider.core.util;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;

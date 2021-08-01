@@ -1,5 +1,6 @@
 package org.coryjk.wikispider.core.spider;
 
+import org.coryjk.wikispider.core.message.State;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,7 +13,7 @@ public abstract class BreadthFirstSpider<T> implements Spider<T> {
     private static final Logger log = LoggerFactory.getLogger(BreadthFirstSpider.class);
 
     @Override
-    public List<T> crawl(final T start, final T destination) {
+    public State<List<T>> crawl(final T start, final T target) {
         // fetch first adjacent nodes to visit
         final Queue<List<T>> toVisit = new LinkedList<>();
         toVisit.add(List.of(start));
@@ -20,7 +21,7 @@ public abstract class BreadthFirstSpider<T> implements Spider<T> {
         // do BFS search until destination is reached or until terminal state is met
         while (!toVisit.isEmpty()) {
             final List<T> path = toVisit.poll();
-            log.info("Path: [{}], \nPaths left to check: [{}]", path, toVisit.size());
+            log.info("Path: [{}], paths left to check: [{}]", path, toVisit.size());
 
             // get last node from the next path
             final T current = dequeueUntilValidNode(path);
@@ -28,16 +29,15 @@ public abstract class BreadthFirstSpider<T> implements Spider<T> {
                 continue;
             }
 
-            // terminal state reached, return path
-            if (inTerminalState(current, destination)) {
+            // check current search state
+            final State<List<T>> searchState = getCurrentState(current, target, path);
+            if (searchState.isTerminal()) {
                 // signal termination
-                terminate();
-                return path;
+                return searchState;
             }
-            updateState();
 
             // visit next nodes then return new path to queue
-            final List<T> neighbors = visit(current, path);
+            final List<T> neighbors = visit(current);
             for (final T neighbor : neighbors) {
                 if (current.equals(neighbor)) {
                     continue;
@@ -52,13 +52,9 @@ public abstract class BreadthFirstSpider<T> implements Spider<T> {
         return null;
     }
 
-    protected abstract List<T> visit(final T node, final List<T> currentPath);
+    protected abstract List<T> visit(final T node);
 
-    protected abstract boolean inTerminalState(final T node, final T destination);
-
-    protected abstract void terminate();
-
-    protected abstract void updateState();
+    protected abstract State<List<T>> getCurrentState(final T node, final T target, final List<T> currentPath);
 
     protected boolean isValidNode(final T node) {
         return true;

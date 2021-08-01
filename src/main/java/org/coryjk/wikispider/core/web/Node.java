@@ -1,4 +1,6 @@
 package org.coryjk.wikispider.core.web;
 
-public record Node<T>() {
+public interface Node<T> extends Comparable<Node<T>> {
+
+    T getValue();
 }
