@@ -2,9 +2,10 @@ package org.coryjk.wikispider.core.message;
 
 public enum Status {
 
-    WORKING,
+    COLLISION,
+    ERROR,
     FOUND_RESULT,
     MAX_ATTEMPTS_EXHAUSTED,
-    COLLISION,
-    ERROR
+    PATHS_EXHAUSTED,
+    WORKING,
 }

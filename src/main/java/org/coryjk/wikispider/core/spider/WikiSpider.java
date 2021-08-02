@@ -4,6 +4,7 @@ import org.coryjk.wikispider.core.message.State;
 import org.coryjk.wikispider.core.message.Status;
 import org.coryjk.wikispider.core.spider.controller.Controller;
 import org.coryjk.wikispider.core.util.wiki.WikiUtils;
+import org.coryjk.wikispider.core.web.WebNode;
 import org.coryjk.wikispider.core.web.WikiNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,14 +18,14 @@ import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class WikiSpider extends BreadthFirstSpider<WikiNode> {
+public class WikiSpider extends BreadthFirstSpider<WebNode> {
 
     private static final Logger log = LoggerFactory.getLogger(WikiSpider.class);
 
     private final Controller<WikiSpider> controller;
     private final int maxChances;
     private final long connectionGracePeriod;
-    private final Set<WikiNode> visitedNodes;
+    private final Set<WebNode> visitedNodes;
 
     private Predicate<String> urlFilter = url -> true;
 
@@ -32,7 +33,7 @@ public class WikiSpider extends BreadthFirstSpider<WikiNode> {
                final int maxChances,
                final long connectionGracePeriod) {
         this.controller = controller != null ? controller : Controller.create();
-        this.maxChances = maxChances; // <- TODO: obsolete atm
+        this.maxChances = maxChances;
         this.connectionGracePeriod = connectionGracePeriod;
         this.visitedNodes = new TreeSet<>();
     }
@@ -45,34 +46,32 @@ public class WikiSpider extends BreadthFirstSpider<WikiNode> {
         this.urlFilter = urlFilter;
     }
 
-    public static List<WikiNode> getAdjacentNodes(final WikiNode node) {
+    public static List<WebNode> getAdjacentNodes(final WebNode node) {
         return new WikiSpider(null, -1, 0, WikiUtils::isValidURL).visit(node);
     }
 
     @Override
-    protected List<WikiNode> visit(final WikiNode node) {
-        final Set<WikiNode> adjacentNodes = new LinkedHashSet<>();
-        rest();
+    protected List<WebNode> visit(final WebNode node) {
+        final Set<WebNode> adjacentNodes = new LinkedHashSet<>();
 
-        log.info("Visiting node: [{}]", node);
+        rest();
 
         getAdjacentURLs(node.getValue()).stream()
                 .filter(urlFilter)
                 .map(url -> new WikiNode(url, node))
                 .filter(adjacentNode -> isValidNode(adjacentNode) && !controller.hasVisited(adjacentNode))
                 .collect(Collectors.toCollection(() -> adjacentNodes));
+
         controller.reportVisited(node);
         visitedNodes.add(node);
-
-        log.info("Nodes adjacent to [{}]: [{}]", node, adjacentNodes);
 
         return new LinkedList<>(adjacentNodes);
     }
 
     @Override
-    protected State<List<WikiNode>> getCurrentState(final WikiNode node,
-                                                    final WikiNode target,
-                                                    final List<WikiNode> currentPath) {
+    protected State<List<WebNode>> getCurrentState(final WebNode node,
+                                                   final WebNode target,
+                                                   final List<WebNode> currentPath) {
         final Status status;
 
         // target node found
@@ -99,7 +98,12 @@ public class WikiSpider extends BreadthFirstSpider<WikiNode> {
     }
 
     @Override
-    protected boolean isValidNode(final WikiNode node) {
+    protected State<List<WebNode>> getExhaustedState() {
+        return new State<>(new LinkedList<>(), Status.PATHS_EXHAUSTED);
+    }
+
+    @Override
+    protected boolean isValidNode(final WebNode node) {
         return !visitedNodes.contains(node);
     }
 
@@ -110,13 +114,18 @@ public class WikiSpider extends BreadthFirstSpider<WikiNode> {
     private void rest() {
         try {
             Thread.sleep(connectionGracePeriod);
-        } catch (InterruptedException __) { }
+        } catch (InterruptedException interruptedException) {
+            log.error("Interruption occurred during connection grace period [{}]",
+                    connectionGracePeriod, interruptedException);
+        }
     }
 
     private List<String> getAdjacentURLs(final String url) {
         try {
             return WikiUtils.getAllURLSWithoutExternalLinks(url);
-        } catch (IOException __) { }
+        } catch (IOException ioException) {
+            log.error("Failed to get adjacent urls of [{}]", url, ioException);
+        }
         return new LinkedList<>();
     }
 }

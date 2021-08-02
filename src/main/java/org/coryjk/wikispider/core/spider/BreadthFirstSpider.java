@@ -16,12 +16,13 @@ public abstract class BreadthFirstSpider<T> implements Spider<T> {
     public State<List<T>> crawl(final T start, final T target) {
         // fetch first adjacent nodes to visit
         final Queue<List<T>> toVisit = new LinkedList<>();
-        toVisit.add(List.of(start));
+        if (start != null) {
+            toVisit.add(List.of(start));
+        }
 
         // do BFS search until destination is reached or until terminal state is met
         while (!toVisit.isEmpty()) {
             final List<T> path = toVisit.poll();
-            log.info("Path: [{}], paths left to check: [{}]", path, toVisit.size());
 
             // get last node from the next path
             final T current = dequeueUntilValidNode(path);
@@ -32,7 +33,6 @@ public abstract class BreadthFirstSpider<T> implements Spider<T> {
             // check current search state
             final State<List<T>> searchState = getCurrentState(current, target, path);
             if (searchState.isTerminal()) {
-                // signal termination
                 return searchState;
             }
 
@@ -49,12 +49,14 @@ public abstract class BreadthFirstSpider<T> implements Spider<T> {
         }
 
         // no path found
-        return null;
+        return getExhaustedState();
     }
 
     protected abstract List<T> visit(final T node);
 
     protected abstract State<List<T>> getCurrentState(final T node, final T target, final List<T> currentPath);
+
+    protected abstract State<List<T>> getExhaustedState();
 
     protected boolean isValidNode(final T node) {
         return true;
