@@ -1,6 +1,7 @@
 # wiki-spider-core
 
 ### Overview
+
 Package containing the core definitions for `wiki-spider`. 
 Ever wondered how many pages or "steps" it takes to get from
 one Wikipedia page _A_ to Wikipedia page _B_? This pet project
@@ -25,3 +26,25 @@ parallelized BFS is well-described on this
 [wiki](https://en.wikipedia.org/wiki/Parallel_breadth-first_search).
 
 ![High-level overview](./doc/wiki-spider-worker-diagram.png)
+
+### Example Usage
+
+```java
+class Example {
+
+    public static void main(final String[] args) throws Exception {
+        final String start = "/Apache_Tomcat";
+        final String target = "/Microsoft";
+        
+        final Future<List<WebNode>> result = SearchProvider.inMemoryWikiSearch(
+                start,  // start page: https://en.wikipedia.org/wiki/Apache_Tomcat
+                target, // target page: https://en.wikipedia.org/wiki/Microsoft
+                5,      // num threads
+                50,     // max chances per "epoch" (per worker attempt)
+                500     // ms connection grace period
+        );
+        
+        log.info("Result path: {}", result.get());
+    }
+}
+```
