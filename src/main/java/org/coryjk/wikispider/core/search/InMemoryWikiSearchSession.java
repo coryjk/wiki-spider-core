@@ -25,6 +25,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class InMemoryWikiSearchSession implements SearchSession<WebNode> {
@@ -138,29 +139,32 @@ public class InMemoryWikiSearchSession implements SearchSession<WebNode> {
     private Future<WebNode> performSubSearchAsync(final WebNode current, final WebNode target) {
         return CompletableFuture
                 .supplyAsync(doWork(current, target), searchExecutor)
-                .thenApply(
-                        state -> {
-                            final boolean collision = state.status() == Status.COLLISION;
-                            final boolean foundTarget = state.status() == Status.FOUND_RESULT;
-
-                            if (!collision) {
-                                workerAwait();
-                            } else {
-                                workerPermit.release();
-                            }
-
-                            if (!foundTarget) {
-                                enqueueWorkFromTerminalState(state);
-                            }
-
-                            return foundTarget
-                                    ? state.value().get(state.value().size()-1)
-                                    : null;
-                        });
+                .thenApply(handleTerminalState());
     }
 
     private Supplier<State<List<WebNode>>> doWork(final WebNode current, final WebNode target) {
         return () -> acquireWorkPermit() ? spawnSpider().crawl(current, target) : createFailureState();
+    }
+
+    private Function<State<List<WebNode>>, WebNode> handleTerminalState() {
+        return state -> {
+            final boolean collision = state.status() == Status.COLLISION;
+            final boolean foundTarget = state.status() == Status.FOUND_RESULT;
+
+            if (!collision) {
+                workerAwait();
+            } else {
+                workerPermit.release();
+            }
+
+            if (!foundTarget) {
+                enqueueWorkFromTerminalState(state);
+            }
+
+            return foundTarget
+                    ? state.value().get(state.value().size()-1)
+                    : null;
+        };
     }
 
     private boolean acquireWorkPermit() {
