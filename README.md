@@ -45,6 +45,18 @@ class Example {
         );
         
         log.info("Result path: {}", result.get());
+        // Result path: [/Microsoft, /Software_release_life_cycle, /Apache_Tomcat]
     }
 }
 ```
+
+### TODO:
+1. Optional reporter injection to allow for custom reporting between certain steps,
+ one example use-case being logging or live progress tracking
+    * This could allow for cool visualizations on live progress for big searches
+    * Custom logging for debugging (or no logging at all)
+2. Worker abstraction
+    * Allows for flexible worker definitions (e.g., worker on remote host)
+3. Define maximum _global_ attempts for a search
+    * There is only a configured maximum for each worker, meaning the overall search
+   process is exhaustive (takes too long if no result exists)
